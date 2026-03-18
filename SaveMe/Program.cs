@@ -1,4 +1,5 @@
-﻿foreach (var arg in args)
+﻿RepoService repoService = new RepoService();
+foreach (var arg in args)
 {
     switch (arg)
     {
@@ -8,6 +9,9 @@
             break;
         case "init":
             RepoService.InitRepo();
+            break;
+        case "commit":
+            repoService.CommitChanges();
             break;
         default:
             ShowHelp();
