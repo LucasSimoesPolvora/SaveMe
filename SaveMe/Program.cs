@@ -6,6 +6,9 @@
         case "h":
             ShowHelp();
             break;
+        case "init":
+            RepoService.InitRepo();
+            break;
         default:
             ShowHelp();
             break;
