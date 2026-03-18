@@ -1,5 +1,6 @@
 public class RepoService
 {
+    List<FileInfo> trackedFiles = new List<FileInfo>();
     public static void InitRepo()
     {
         if (IsRepoInitialized())
@@ -51,5 +52,38 @@ public class RepoService
             }
         }
         return false;
+    }
+    public void CommitChanges()
+    {
+        if (!IsRepoInitialized())
+        {
+            Console.WriteLine("Repository not initialized. Please run 'init' command first.");
+            return;
+        }
+
+        GetFilesRecursively(Directory.GetCurrentDirectory());
+
+        foreach(FileInfo file in trackedFiles)
+        {
+            Console.WriteLine(file.FullName);
+        }
+    }
+
+    public static void GetFilesRecursively(string path){
+        DirectoryInfo info = new(path);
+
+        foreach (FileInfo file in info.GetFiles())
+        {
+            Console.WriteLine(file.FullName);
+        }
+
+        foreach (DirectoryInfo dir in info.GetDirectories())
+        {
+            if(dir.FullName.Contains(".sm"))
+            {
+                continue;
+            }
+            GetFilesRecursively(dir.FullName);
+        }
     }
 }
