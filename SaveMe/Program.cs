@@ -1,2 +1,21 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+﻿foreach (var arg in args)
+{
+    switch (arg)
+    {
+        case "help":
+        case "h":
+            ShowHelp();
+            break;
+        default:
+            ShowHelp();
+            break;
+    }
+}
+
+void ShowHelp()
+{
+    Console.WriteLine("Usage: SaveMe [options]");
+    Console.WriteLine("Options:");
+    Console.WriteLine("  help, h     Show this help message");
+    Console.WriteLine("  init        Initialize the repository");
+}
