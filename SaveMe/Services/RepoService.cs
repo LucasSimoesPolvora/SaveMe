@@ -30,11 +30,12 @@ public class RepoService
         try
         {
             Directory.CreateDirectory(".sm");
-            _ = new DirectoryInfo(Directory.GetCurrentDirectory() + "\\.sm")
+            DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm")
             {
                 Attributes = FileAttributes.Hidden
             };
 
+            Directory.CreateDirectory(dir.FullName + "\\chunk_store");
         }
         catch (Exception ex)
         {
@@ -44,9 +45,9 @@ public class RepoService
     public static bool IsRepoInitialized()
     {
         DirectoryInfo info = new(Directory.GetCurrentDirectory());
-        foreach (var file in info.GetDirectories())
+        foreach (DirectoryInfo dir in info.GetDirectories())
         {
-            if (file.Name == ".sm")
+            if (dir.Name == ".sm")
             {
                 return true;
             }
@@ -63,18 +64,23 @@ public class RepoService
 
         GetFilesRecursively(Directory.GetCurrentDirectory());
 
-        foreach(FileInfo file in trackedFiles)
-        {
-            Console.WriteLine(file.FullName);
-        }
+        trackedFiles.ForEach((file) => {
+            CdcService cdc = new();
+            byte[] data = File.ReadAllBytes(file.FullName);
+            List<byte[]> chunks = cdc.ChunkData(data);
+
+            chunks.ForEach((chunk) => {
+                UpdateChunkStore(chunk);
+            });
+        });
     }
 
-    public static void GetFilesRecursively(string path){
+    public void GetFilesRecursively(string path){
         DirectoryInfo info = new(path);
 
         foreach (FileInfo file in info.GetFiles())
         {
-            Console.WriteLine(file.FullName);
+            trackedFiles.Add(file);
         }
 
         foreach (DirectoryInfo dir in info.GetDirectories())
@@ -85,5 +91,16 @@ public class RepoService
             }
             GetFilesRecursively(dir.FullName);
         }
+    }
+    public static void UpdateChunkStore(byte[] chunk){
+        string hash = CdcService.CalculateChunkFingerprint(chunk);
+
+        DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\chunk_store");
+        
+        using (FileStream fs = File.Create($"{dir.FullName}\\{hash}.txt")){
+            fs.Write(chunk, 0, chunk.Length);
+        }
+
+        
     }
 }
