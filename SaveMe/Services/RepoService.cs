@@ -97,9 +97,12 @@ public class RepoService
 
         DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\chunk_store");
         
-        using (FileStream fs = File.Create($"{dir.FullName}\\{hash}.txt")){
-            fs.Write(chunk, 0, chunk.Length);
+        if(!File.Exists($"{dir.FullName}\\{hash}.txt")){
+            using (FileStream fs = File.Create($"{dir.FullName}\\{hash}.txt")){
+                fs.Write(chunk, 0, chunk.Length);
+            }
         }
+        
 
         
     }
