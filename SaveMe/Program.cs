@@ -8,10 +8,13 @@ foreach (var arg in args)
             ShowHelp();
             break;
         case "init":
-            RepoService.InitRepo();
+            repoService.InitRepo();
             break;
         case "commit":
             repoService.CommitChanges();
+            break;
+        case "check":
+            repoService.CheckChanges();
             break;
         default:
             ShowHelp();

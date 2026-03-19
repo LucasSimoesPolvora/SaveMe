@@ -2,7 +2,7 @@ public class RepoService
 {
     readonly List<FileInfo> trackedFiles = new List<FileInfo>();
     bool wasUpdated = false;
-    public static void InitRepo()
+    public void InitRepo()
     {
         if (IsRepoInitialized())
         {
@@ -67,9 +67,7 @@ public class RepoService
     }
     public void CommitChanges()
     {
-        if (!CheckRepo()){
-            return;
-        }
+        if (!CheckRepo()) return;
 
         GetFilesRecursively(Directory.GetCurrentDirectory());
 
@@ -107,14 +105,59 @@ public class RepoService
     }
     public void UpdateChunkStore(byte[] chunk){
         string hash = CdcService.CalculateChunkFingerprint(chunk);
+        string safeHash = hash.Replace("/", "_");
 
         DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\chunk_store");
+        string filePath = $"{dir.FullName}\\{safeHash}.txt";
         
-        if(!File.Exists($"{dir.FullName}\\{hash}.txt")){
-            using (FileStream fs = File.Create($"{dir.FullName}\\{hash}.txt")){
+        if(!File.Exists(filePath)){            
+            using (FileStream fs = File.Create(filePath)){
                 wasUpdated = true;
                 fs.Write(chunk, 0, chunk.Length);
             }
+        }
+    }
+
+    public void CheckChanges()
+    {
+        if (!CheckRepo()) return;
+
+        GetFilesRecursively(Directory.GetCurrentDirectory());
+
+        trackedFiles.ForEach((file) => {
+            bool hasChanges = false;
+            int numberOfChunks = 0;
+            CdcService cdc = new();
+            byte[] data = File.ReadAllBytes(file.FullName);
+            List<byte[]> chunks = cdc.ChunkData(data);
+
+            chunks.ForEach((chunk) => {
+                string hash = CdcService.CalculateChunkFingerprint(chunk);
+                string safeHash = hash.Replace("/", "_");
+                DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\chunk_store");
+                if(!File.Exists($"{dir.FullName}\\{safeHash}.txt")) {
+                    hasChanges = true;
+                    numberOfChunks++;
+                }
+            });
+            if (hasChanges)
+            {
+                Console.WriteLine($"Changes detected in file: {GetRelativePath(file.FullName)}, {numberOfChunks} new chunks");
+            }
+        });
+    }
+
+    public string GetRelativePath(string fullPath)
+    {
+        string currentDir = Directory.GetCurrentDirectory();
+        if (fullPath.StartsWith(currentDir))
+        {
+            string relativePath = fullPath.Substring(currentDir.Length).TrimStart(Path.DirectorySeparatorChar);
+            return relativePath;
+        }
+        else
+        {
+            return "";
         }
     }
 }
