@@ -28,4 +28,6 @@ void ShowHelp()
     Console.WriteLine("Options:");
     Console.WriteLine("  help, h     Show this help message");
     Console.WriteLine("  init        Initialize the repository");
+    Console.WriteLine("  commit      Commit changes to the repository");
+    Console.WriteLine("  check       Check for changes in the repository");
 }
