@@ -1,6 +1,7 @@
 public class RepoService
 {
-    List<FileInfo> trackedFiles = new List<FileInfo>();
+    readonly List<FileInfo> trackedFiles = new List<FileInfo>();
+    bool wasUpdated = false;
     public static void InitRepo()
     {
         if (IsRepoInitialized())
@@ -54,11 +55,19 @@ public class RepoService
         }
         return false;
     }
-    public void CommitChanges()
+    
+    public static bool CheckRepo()
     {
         if (!IsRepoInitialized())
         {
             Console.WriteLine("Repository not initialized. Please run 'init' command first.");
+            return false;
+        }
+        return true;
+    }
+    public void CommitChanges()
+    {
+        if (!CheckRepo()){
             return;
         }
 
@@ -73,6 +82,10 @@ public class RepoService
                 UpdateChunkStore(chunk);
             });
         });
+
+        if(!wasUpdated){
+            Console.WriteLine($"No changes detected");
+        }
     }
 
     public void GetFilesRecursively(string path){
@@ -92,18 +105,16 @@ public class RepoService
             GetFilesRecursively(dir.FullName);
         }
     }
-    public static void UpdateChunkStore(byte[] chunk){
+    public void UpdateChunkStore(byte[] chunk){
         string hash = CdcService.CalculateChunkFingerprint(chunk);
 
         DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\chunk_store");
         
         if(!File.Exists($"{dir.FullName}\\{hash}.txt")){
             using (FileStream fs = File.Create($"{dir.FullName}\\{hash}.txt")){
+                wasUpdated = true;
                 fs.Write(chunk, 0, chunk.Length);
             }
         }
-        
-
-        
     }
 }
