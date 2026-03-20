@@ -59,6 +59,7 @@ public class ChunkService
     public void CheckChanges()
     {
         bool hasChanges = false;
+        repoService.trackedFiles.Clear();
         repoService.GetFilesRecursively(Directory.GetCurrentDirectory());
         repoService.trackedFiles.ForEach((file) => {
             int numberOfChunks = 0;
