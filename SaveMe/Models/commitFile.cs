@@ -6,10 +6,10 @@ namespace SaveMe.Models
     
         public List<byte[]> Chunks { get; set; }
 
-        public CommitFile(string _id, List<byte[]> _chunks)
+        public CommitFile(string id, List<byte[]> chunks)
         {
-            Id = _id;
-            Chunks = _chunks;
+            Id = id;
+            Chunks = chunks;
         }
     }
 }

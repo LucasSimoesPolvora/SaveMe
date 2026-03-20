@@ -2,7 +2,6 @@ public class RepoService
 {
     public readonly List<FileInfo> trackedFiles = new List<FileInfo>();
     
-    
     public void InitRepo()
     {
         if (IsRepoInitialized())
@@ -75,7 +74,10 @@ public class RepoService
 
         foreach (FileInfo file in info.GetFiles())
         {
-            trackedFiles.Add(file);
+            if(trackedFiles.Find(f => f.FullName == file.FullName) == null)
+            {
+                trackedFiles.Add(file);
+            }
         }
 
         foreach (DirectoryInfo dir in info.GetDirectories())
