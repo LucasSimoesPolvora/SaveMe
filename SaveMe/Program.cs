@@ -1,4 +1,6 @@
 ﻿RepoService repoService = new RepoService();
+SnapshotService snapshotService = new SnapshotService();
+ChunkService chunkService = new ChunkService();
 foreach (var arg in args)
 {
     switch (arg)
@@ -11,10 +13,10 @@ foreach (var arg in args)
             repoService.InitRepo();
             break;
         case "commit":
-            repoService.CreateSnapshot();
+            snapshotService.CreateSnapshot();
             break;
         case "check":
-            repoService.CheckChanges();
+            chunkService.CheckChanges();
             break;
         default:
             ShowHelp();
