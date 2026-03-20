@@ -1,7 +1,7 @@
 public class CdcService
 {
     const int normalChunkSize = 4096; // IF YOU CHANGE THIS, UPDATE THE MASK
-    const int mask = 12; // log2(4096)
+    const uint mask = 0xFFF;
     const int minChunkSize = normalChunkSize / 2; 
     const int maxChunkSize = normalChunkSize * 2; 
 
