@@ -1,7 +1,11 @@
+using System.Text.Json;
+using SaveMe.Models;
+
 public class RepoService
 {
     readonly List<FileInfo> trackedFiles = new List<FileInfo>();
     bool wasUpdated = false;
+    
     public void InitRepo()
     {
         if (IsRepoInitialized())
@@ -26,6 +30,7 @@ public class RepoService
             Console.WriteLine("\nRepository created successfully.");
         }
     }
+    
     public static void CreateRepo()
     {
         try
@@ -37,12 +42,14 @@ public class RepoService
             };
 
             Directory.CreateDirectory(dir.FullName + "\\chunk_store");
+            Directory.CreateDirectory(dir.FullName + "\\snapshots");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error creating repository: {ex.Message}");
         }
     }
+    
     public static bool IsRepoInitialized()
     {
         DirectoryInfo info = new(Directory.GetCurrentDirectory());
@@ -65,6 +72,7 @@ public class RepoService
         }
         return true;
     }
+    
     public void CommitChanges()
     {
         if (!CheckRepo()) return;
@@ -87,6 +95,7 @@ public class RepoService
     }
 
     public void GetFilesRecursively(string path){
+        trackedFiles.Clear();
         DirectoryInfo info = new(path);
 
         foreach (FileInfo file in info.GetFiles())
@@ -103,6 +112,7 @@ public class RepoService
             GetFilesRecursively(dir.FullName);
         }
     }
+    
     public void UpdateChunkStore(byte[] chunk){
         string hash = CdcService.CalculateChunkFingerprint(chunk);
         string safeHash = hash.Replace("/", "_");
@@ -123,15 +133,11 @@ public class RepoService
         if (!CheckRepo()) return;
 
         GetFilesRecursively(Directory.GetCurrentDirectory());
-
+        bool hasChanges = false;
         trackedFiles.ForEach((file) => {
-            bool hasChanges = false;
+            
             int numberOfChunks = 0;
-            CdcService cdc = new();
-            byte[] data = File.ReadAllBytes(file.FullName);
-            List<byte[]> chunks = cdc.ChunkData(data);
-
-            chunks.ForEach((chunk) => {
+            GetChunksByFile(file).ForEach((chunk) => {
                 string hash = CdcService.CalculateChunkFingerprint(chunk);
                 string safeHash = hash.Replace("/", "_");
                 DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\chunk_store");
@@ -147,7 +153,30 @@ public class RepoService
         });
     }
 
-    public string GetRelativePath(string fullPath)
+    public List<byte[]> GetChunksByFile(FileInfo file)
+    {
+        CdcService cdc = new();
+        byte[] data = File.ReadAllBytes(file.FullName);
+        return cdc.ChunkData(data);
+    }
+
+    public bool HasChanges(FileInfo file)
+    {
+        bool hasChanges = false;
+        GetChunksByFile(file).ForEach((chunk) => {
+            string hash = CdcService.CalculateChunkFingerprint(chunk);
+            Console.WriteLine($"Chunk hash: {hash}");
+            string safeHash = hash.Replace("/", "_");
+            DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\chunk_store");
+            if(!File.Exists($"{dir.FullName}\\{safeHash}.txt")) {
+                Console.WriteLine($"New chunk detected: {safeHash}");
+                hasChanges = true;
+            }
+        });
+        return hasChanges;
+    }
+
+    public static string GetRelativePath(string fullPath)
     {
         string currentDir = Directory.GetCurrentDirectory();
         if (fullPath.StartsWith(currentDir))
@@ -159,5 +188,49 @@ public class RepoService
         {
             return "";
         }
+    }
+
+    public void CreateSnapshot()
+    {
+        if(!CheckRepo()) return;
+
+        bool hadChanges = false;
+
+        DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\snapshots");
+        string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
+        string snapshotId = $"snapshot_{timestamp}";
+        string filePath = $"{dir.FullName}\\{snapshotId}.json";
+
+        GetFilesRecursively(Directory.GetCurrentDirectory());
+
+        Snapshots snapshot = new()
+        {
+            Id = snapshotId,
+            CommitFiles = Array.Empty<CommitFile>()
+        };
+        
+        // Check for changes BEFORE committing
+        trackedFiles.ForEach((file) => {
+            Console.WriteLine($"Checking file: {GetRelativePath(file.FullName)}");
+            Console.WriteLine($"Has changes: {HasChanges(file)}");
+            if(HasChanges(file)){
+                hadChanges = true;
+                CommitFile commitFile = new(GetRelativePath(file.FullName), GetChunksByFile(file));        
+                Console.WriteLine($"Changes detected in file: {GetRelativePath(file.FullName)}");
+
+                snapshot.CommitFiles = [.. snapshot.CommitFiles, commitFile];
+            }
+        });
+
+        if(!hadChanges){
+            Console.WriteLine("No changes detected. Snapshot not created.");
+            return;
+        }
+
+        // Commit changes AFTER detecting them
+        CommitChanges();
+        
+        string json = JsonSerializer.Serialize(snapshot);
+        File.WriteAllText(filePath, json);
     }
 }

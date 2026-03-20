@@ -11,7 +11,7 @@ foreach (var arg in args)
             repoService.InitRepo();
             break;
         case "commit":
-            repoService.CommitChanges();
+            repoService.CreateSnapshot();
             break;
         case "check":
             repoService.CheckChanges();
