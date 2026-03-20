@@ -3,7 +3,12 @@ using SaveMe.Models;
 public class SnapshotService
 {
     readonly RepoService repoService = new();
-    readonly ChunkService chunkService = new();
+    readonly ChunkService chunkService;
+
+    public SnapshotService()
+    {
+        chunkService = new(repoService);
+    }
     public void CreateSnapshot()
     {
         if(!RepoService.CheckRepo()) return;
@@ -42,5 +47,23 @@ public class SnapshotService
         var options = new JsonSerializerOptions { WriteIndented = true };
         string json = JsonSerializer.Serialize(snapshot, options);
         File.WriteAllText(filePath, json);
+    }
+
+    public void ListSnapshots()
+    {
+        DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\snapshots");
+        FileInfo[] snapshotFiles = dir.GetFiles("*.json");
+        if (!dir.Exists || snapshotFiles.Length == 0)
+        {
+            Console.WriteLine("No snapshots found.");
+            return;
+        }
+
+        Console.WriteLine("Snapshots:");
+        int i = 0;
+        foreach (FileInfo file in snapshotFiles)
+        {
+            Console.WriteLine($"- {++i}: {file.Name}");
+        }
     }
 }

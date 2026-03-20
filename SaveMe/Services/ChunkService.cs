@@ -1,6 +1,12 @@
 public class ChunkService
 {
-    readonly RepoService repoService = new();
+    readonly RepoService repoService;
+
+    public ChunkService(RepoService repoService)
+    {
+        this.repoService = repoService;
+    }
+
     public void UpdateChunkStore(byte[] chunk)
     {
         string hash = CdcService.CalculateChunkFingerprint(chunk);

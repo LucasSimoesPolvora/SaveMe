@@ -4,7 +4,12 @@ using SaveMe.Models;
 public class RepoService
 {
     public readonly List<FileInfo> trackedFiles = new List<FileInfo>();
-    readonly ChunkService chunkService = new();
+    readonly ChunkService chunkService;
+
+    public RepoService()
+    {
+        chunkService = new ChunkService(this);
+    }
     
     public void InitRepo()
     {

@@ -1,6 +1,6 @@
 ﻿RepoService repoService = new RepoService();
 SnapshotService snapshotService = new SnapshotService();
-ChunkService chunkService = new ChunkService();
+ChunkService chunkService = new(repoService);
 foreach (var arg in args)
 {
     switch (arg)
@@ -21,6 +21,10 @@ foreach (var arg in args)
         case "ch":
             chunkService.CheckChanges();
             break;
+        case "snapshots":
+        case "s":
+            snapshotService.ListSnapshots();
+            break;
         default:
             ShowHelp();
             break;
@@ -35,4 +39,5 @@ void ShowHelp()
     Console.WriteLine("  init, i        Initialize the repository");
     Console.WriteLine("  commit, c      Commit changes to the repository");
     Console.WriteLine("  check, ch      Check for changes in the repository");
+    Console.WriteLine("  snapshots, s   List all snapshots in the repository");
 }
