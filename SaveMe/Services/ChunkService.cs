@@ -59,7 +59,6 @@ public class ChunkService
     public void CheckChanges()
     {
         bool hasChanges = false;
-        repoService.trackedFiles.Clear();
         repoService.GetFilesRecursively(Directory.GetCurrentDirectory());
         repoService.trackedFiles.ForEach((file) => {
             int numberOfChunks = 0;
@@ -78,5 +77,13 @@ public class ChunkService
             }
             hasChanges = false;
         });
+    }
+
+    public void WriteChunkToFile(byte[] chunk, string filePath)
+    {
+        using (FileStream fs = new(filePath, FileMode.Append))
+        {
+            fs.Write(chunk, 0, chunk.Length);
+        }
     }
 }
