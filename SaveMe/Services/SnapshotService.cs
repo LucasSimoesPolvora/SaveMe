@@ -62,7 +62,9 @@ public class SnapshotService
         chunkService.CommitChunks();
         
         var options = new JsonSerializerOptions { WriteIndented = true };
-        string json = JsonSerializer.Serialize(snapshot, options);
+        var context = new JsonContext();
+        string json = JsonSerializer.Serialize(snapshot, typeof(Snapshots), context);
+        
         File.WriteAllText(filePath, json);
     }
 
@@ -96,7 +98,9 @@ public class SnapshotService
 
         FileInfo lastSnapshotFile = snapshotFiles.OrderByDescending(f => f.Name).First();
         string lastSnapshotJson = File.ReadAllText(lastSnapshotFile.FullName);
-        Snapshots? lastSnapshot = JsonSerializer.Deserialize<Snapshots>(lastSnapshotJson);
+        var context = new JsonContext();
+        Snapshots? lastSnapshot = JsonSerializer.Deserialize<Snapshots>(lastSnapshotJson, context.Snapshots);
+
 
         if (lastSnapshot == null)
         {
@@ -130,7 +134,9 @@ public class SnapshotService
 
         FileInfo lastSnapshotFile = snapshotFiles.OrderByDescending(f => f.Name).First();
         string lastSnapshotJson = File.ReadAllText(lastSnapshotFile.FullName);
-        Snapshots? lastSnapshot = JsonSerializer.Deserialize<Snapshots>(lastSnapshotJson);
+        var context = new JsonContext();
+        Snapshots? lastSnapshot = JsonSerializer.Deserialize<Snapshots>(lastSnapshotJson, context.Snapshots);
+
 
         if (lastSnapshot?.DeletedFiles == null)
         {
@@ -161,7 +167,8 @@ public class SnapshotService
         FileInfo selectedSnapshotFile = snapshotFiles[snapshotNumber - 1];
         
         string snapshotJson = File.ReadAllText(selectedSnapshotFile.FullName);
-        Snapshots? snapshot = JsonSerializer.Deserialize<Snapshots>(snapshotJson);
+        var context = new JsonContext();
+        Snapshots? snapshot = JsonSerializer.Deserialize<Snapshots>(snapshotJson, context.Snapshots);
 
         if (snapshot == null)
         {
