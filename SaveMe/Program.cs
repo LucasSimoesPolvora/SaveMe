@@ -25,6 +25,18 @@ foreach (var arg in args)
         case "s":
             snapshotService.ListSnapshots();
             break;
+        case "restore":
+        case "r":
+            Console.WriteLine("Enter the snapshot number to restore:");
+            if (int.TryParse(Console.ReadLine(), out int snapshotNumber))
+            {
+                snapshotService.RestoreSnapshot(snapshotNumber);
+            }
+            else
+            {
+                Console.WriteLine("Invalid input. Please enter a valid snapshot number.");
+            }
+            break;
         default:
             ShowHelp();
             break;

@@ -33,13 +33,11 @@ public class SnapshotService
         repoService.trackedFiles.ForEach((file) => {
             string relativePath = RepoService.GetRelativePath(file.FullName);
             
-            // Check if file has changes (modified)
             if(chunkService.HasChanges(file)){
                 hadChanges = true;
                 CommitFile commitFile = new(relativePath, ChunkService.GetChunksByFile(file));
                 snapshot.CommitFiles = [.. snapshot.CommitFiles, commitFile];
             }
-            // Check if file was previously deleted but now exists (resurrected)
             else if (WasFileDeleted(relativePath))
             {
                 hadChanges = true;
@@ -49,7 +47,6 @@ public class SnapshotService
             }
         });
 
-        // Check for deleted files
         string[] deletedFiles = GetDeletedFiles();
         if (deletedFiles.Length > 0)
         {
@@ -86,18 +83,17 @@ public class SnapshotService
             Console.WriteLine($"- {++i}: {file.Name}");
         }
     }
+
     private string[] GetDeletedFiles()
     {
         DirectoryInfo snapshotDir = new(Directory.GetCurrentDirectory() + "\\.sm\\snapshots");
         FileInfo[] snapshotFiles = snapshotDir.GetFiles("*.json");
         
-        // If this is the first snapshot, no files can be deleted
         if (snapshotFiles.Length == 0)
         {
             return Array.Empty<string>();
         }
 
-        // Get the most recent snapshot
         FileInfo lastSnapshotFile = snapshotFiles.OrderByDescending(f => f.Name).First();
         string lastSnapshotJson = File.ReadAllText(lastSnapshotFile.FullName);
         Snapshots? lastSnapshot = JsonSerializer.Deserialize<Snapshots>(lastSnapshotJson);
@@ -107,10 +103,8 @@ public class SnapshotService
             return Array.Empty<string>();
         }
 
-        // Get current file paths
         HashSet<string> currentFiles = new(repoService.trackedFiles.Select(f => RepoService.GetRelativePath(f.FullName)));
 
-        // Find deleted files
         List<string> deletedFiles = new();
         foreach (CommitFile commitFile in lastSnapshot.CommitFiles)
         {
@@ -134,7 +128,6 @@ public class SnapshotService
             return false;
         }
 
-        // Get the most recent snapshot
         FileInfo lastSnapshotFile = snapshotFiles.OrderByDescending(f => f.Name).First();
         string lastSnapshotJson = File.ReadAllText(lastSnapshotFile.FullName);
         Snapshots? lastSnapshot = JsonSerializer.Deserialize<Snapshots>(lastSnapshotJson);
@@ -144,7 +137,88 @@ public class SnapshotService
             return false;
         }
 
-        // Check if this file is in the deleted files list
         return lastSnapshot.DeletedFiles.Contains(filePath);
+    }
+
+    public void RestoreSnapshot(int snapshotNumber)
+    {
+        DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\snapshots");
+        FileInfo[] snapshotFiles = dir.GetFiles("*.json");
+        
+        if (!dir.Exists || snapshotFiles.Length == 0)
+        {
+            Console.WriteLine("No snapshots found.");
+            return;
+        }
+
+        if (snapshotNumber < 1 || snapshotNumber > snapshotFiles.Length)
+        {
+            Console.WriteLine($"Invalid snapshot number. Please choose a number between 1 and {snapshotFiles.Length}.");
+            return;
+        }
+
+        snapshotFiles = snapshotFiles.OrderByDescending(f => f.Name).ToArray();
+        FileInfo selectedSnapshotFile = snapshotFiles[snapshotNumber - 1];
+        
+        string snapshotJson = File.ReadAllText(selectedSnapshotFile.FullName);
+        Snapshots? snapshot = JsonSerializer.Deserialize<Snapshots>(snapshotJson);
+
+        if (snapshot == null)
+        {
+            Console.WriteLine("Failed to deserialize snapshot.");
+            return;
+        }
+
+        Console.WriteLine($"Restoring snapshot: {selectedSnapshotFile.Name}");
+        
+        string currentDir = Directory.GetCurrentDirectory();
+        DirectoryInfo chunkStoreDir = new(currentDir + "\\.sm\\chunk_store");
+
+        foreach (CommitFile commitFile in snapshot.CommitFiles)
+        {
+            string filePath = Path.Combine(currentDir, commitFile.Id);
+            string? fileDir = Path.GetDirectoryName(filePath);
+
+            if (fileDir != null && !Directory.Exists(fileDir))
+            {
+                Directory.CreateDirectory(fileDir);
+            }
+
+            File.Create(filePath).Close();
+
+            foreach (byte[] chunk in commitFile.Chunks)
+            {
+                string hash = CdcService.CalculateChunkFingerprint(chunk);
+                string safeHash = hash.Replace("/", "_");
+                string chunkFilePath = $"{chunkStoreDir.FullName}\\{safeHash}.txt";
+
+                if (File.Exists(chunkFilePath))
+                {
+                    byte[] chunkData = File.ReadAllBytes(chunkFilePath);
+                    chunkService.WriteChunkToFile(chunkData, filePath);
+                }
+                else
+                {
+                    Console.WriteLine($"Warning: Chunk {safeHash} not found in chunk store for file {commitFile.Id}");
+                }
+            }
+
+            Console.WriteLine($"Restored: {commitFile.Id}");
+        }
+
+        if (snapshot.DeletedFiles != null && snapshot.DeletedFiles.Length > 0)
+        {
+            foreach (string deletedFile in snapshot.DeletedFiles)
+            {
+                string filePath = Path.Combine(currentDir, deletedFile);
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                    Console.WriteLine($"Deleted: {deletedFile}");
+                }
+            }
+        }
+
+        Console.WriteLine("Snapshot restore complete.");
     }
 }
