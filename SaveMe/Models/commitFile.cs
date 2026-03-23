@@ -4,9 +4,9 @@ namespace SaveMe.Models
     {
         public string Id { get; set; } // Will be identified by the file path
     
-        public List<byte[]> Chunks { get; set; }
+        public List<string> Chunks { get; set; }
 
-        public CommitFile(string id, List<byte[]> chunks)
+        public CommitFile(string id, List<string> chunks)
         {
             Id = id;
             Chunks = chunks;

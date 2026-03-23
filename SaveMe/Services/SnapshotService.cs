@@ -35,13 +35,15 @@ public class SnapshotService
             
             if(chunkService.HasChanges(file)){
                 hadChanges = true;
-                CommitFile commitFile = new(relativePath, ChunkService.GetChunksByFile(file));
+                List<string> chunkFingerprints = ChunkService.GetChunkFingerprintsByFile(file);
+                CommitFile commitFile = new(relativePath, chunkFingerprints);
                 snapshot.CommitFiles = [.. snapshot.CommitFiles, commitFile];
             }
             else if (WasFileDeleted(relativePath))
             {
                 hadChanges = true;
-                CommitFile commitFile = new(relativePath, ChunkService.GetChunksByFile(file));
+                List<string> chunkFingerprints = ChunkService.GetChunkFingerprintsByFile(file);
+                CommitFile commitFile = new(relativePath, chunkFingerprints);
                 snapshot.CommitFiles = [.. snapshot.CommitFiles, commitFile];
                 Console.WriteLine($"File resurrected: {relativePath}");
             }
@@ -50,7 +52,6 @@ public class SnapshotService
         string[] deletedFiles = GetDeletedFiles();
         if (deletedFiles.Length > 0)
         {
-            Console.WriteLine("There was a deleted file");
             hadChanges = true;
             snapshot.DeletedFiles = deletedFiles;
         }
@@ -61,9 +62,11 @@ public class SnapshotService
         }
         chunkService.CommitChunks();
         
-        var options = new JsonSerializerOptions { WriteIndented = true };
-        var context = new JsonContext();
+        JsonSerializerOptions options = new() { WriteIndented = true };
+        JsonContext context = new JsonContext();
         string json = JsonSerializer.Serialize(snapshot, typeof(Snapshots), context);
+
+        CompareEfficiency();
         
         File.WriteAllText(filePath, json);
     }
@@ -98,7 +101,7 @@ public class SnapshotService
 
         FileInfo lastSnapshotFile = snapshotFiles.OrderByDescending(f => f.Name).First();
         string lastSnapshotJson = File.ReadAllText(lastSnapshotFile.FullName);
-        var context = new JsonContext();
+        JsonContext context = new();
         Snapshots? lastSnapshot = JsonSerializer.Deserialize<Snapshots>(lastSnapshotJson, context.Snapshots);
 
 
@@ -107,7 +110,7 @@ public class SnapshotService
             return Array.Empty<string>();
         }
 
-        HashSet<string> currentFiles = new(repoService.trackedFiles.Select(f => RepoService.GetRelativePath(f.FullName)));
+        HashSet<string> currentFiles = [.. repoService.trackedFiles.Select(f => RepoService.GetRelativePath(f.FullName))];
 
         List<string> deletedFiles = new();
         foreach (CommitFile commitFile in lastSnapshot.CommitFiles)
@@ -134,7 +137,7 @@ public class SnapshotService
 
         FileInfo lastSnapshotFile = snapshotFiles.OrderByDescending(f => f.Name).First();
         string lastSnapshotJson = File.ReadAllText(lastSnapshotFile.FullName);
-        var context = new JsonContext();
+        JsonContext context = new();
         Snapshots? lastSnapshot = JsonSerializer.Deserialize<Snapshots>(lastSnapshotJson, context.Snapshots);
 
 
@@ -167,7 +170,7 @@ public class SnapshotService
         FileInfo selectedSnapshotFile = snapshotFiles[snapshotNumber - 1];
         
         string snapshotJson = File.ReadAllText(selectedSnapshotFile.FullName);
-        var context = new JsonContext();
+        JsonContext context = new();
         Snapshots? snapshot = JsonSerializer.Deserialize<Snapshots>(snapshotJson, context.Snapshots);
 
         if (snapshot == null)
@@ -193,10 +196,9 @@ public class SnapshotService
 
             File.Create(filePath).Close();
 
-            foreach (byte[] chunk in commitFile.Chunks)
+            foreach (string fingerprint in commitFile.Chunks)
             {
-                string hash = CdcService.CalculateChunkFingerprint(chunk);
-                string safeHash = hash.Replace("/", "_");
+                string safeHash = fingerprint.Replace("/", "_");
                 string chunkFilePath = $"{chunkStoreDir.FullName}\\{safeHash}.txt";
 
                 if (File.Exists(chunkFilePath))
@@ -227,5 +229,30 @@ public class SnapshotService
         }
 
         Console.WriteLine("Snapshot restore complete.");
+    }
+
+    public void CompareEfficiency(){
+        DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\snapshots");
+        FileInfo[] snapshotFiles = dir.GetFiles("*.json");
+        
+        if (!dir.Exists || snapshotFiles.Length == 0)
+        {
+            return;
+        }
+    
+        FileInfo lastSnapshotFile = snapshotFiles.OrderByDescending(f => f.Name).First();
+        string lastSnapshotJson = File.ReadAllText(lastSnapshotFile.FullName);
+        JsonContext context = new();
+        Snapshots? lastSnapshot = JsonSerializer.Deserialize<Snapshots>(lastSnapshotJson, context.Snapshots);
+    
+        if (lastSnapshot == null)
+        {
+            Console.WriteLine("Failed to deserialize snapshot.");
+            return;
+        }
+
+        long totalChunkSize = lastSnapshot.CommitFiles.Sum(cf => cf.Chunks.Sum(chunk => chunk.Length));
+        long totalFileSize = repoService.trackedFiles.Sum(f => f.Length);
+        Console.WriteLine($"Seulement {(double)totalChunkSize / totalFileSize:P2} de nouvelles données écrites pour cette sauvegarde");
     }
 }

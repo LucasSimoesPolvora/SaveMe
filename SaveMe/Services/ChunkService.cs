@@ -29,6 +29,12 @@ public class ChunkService
         return cdc.ChunkData(data);
     }
 
+    public static List<string> GetChunkFingerprintsByFile(FileInfo file)
+    {
+        List<byte[]> chunks = GetChunksByFile(file);
+        return chunks.ConvertAll(chunk => CdcService.CalculateChunkFingerprint(chunk));
+    }
+
     public bool HasChanges(FileInfo file)
     {
         bool hasChanges = false;
