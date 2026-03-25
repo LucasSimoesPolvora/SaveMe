@@ -7,8 +7,8 @@ public class SnapshotServiceTest : IDisposable
     private readonly string _testDirectory;
     private readonly string _snapshotDirectory;
     private readonly string _chunkStoreDirectory;
-    private string _originalWorkingDirectory;
-    private static readonly object _lockObject = new object();
+    private readonly string _originalWorkingDirectory;
+    private static readonly object _lockObject = new();
 
     public SnapshotServiceTest()
     {
@@ -37,6 +37,8 @@ public class SnapshotServiceTest : IDisposable
             try
             {
                 Directory.SetCurrentDirectory(_originalWorkingDirectory);
+                
+                Thread.Sleep(50);
             }
             catch { }
             
