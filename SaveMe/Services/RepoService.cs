@@ -1,7 +1,7 @@
 public class RepoService
 {
-    readonly List<FileInfo> trackedFiles = new List<FileInfo>();
-    bool wasUpdated = false;
+    public readonly List<FileInfo> trackedFiles = new List<FileInfo>();
+    
     public void InitRepo()
     {
         if (IsRepoInitialized())
@@ -26,6 +26,7 @@ public class RepoService
             Console.WriteLine("\nRepository created successfully.");
         }
     }
+    
     public static void CreateRepo()
     {
         try
@@ -37,12 +38,14 @@ public class RepoService
             };
 
             Directory.CreateDirectory(dir.FullName + "\\chunk_store");
+            Directory.CreateDirectory(dir.FullName + "\\snapshots");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error creating repository: {ex.Message}");
         }
     }
+    
     public static bool IsRepoInitialized()
     {
         DirectoryInfo info = new(Directory.GetCurrentDirectory());
@@ -65,33 +68,16 @@ public class RepoService
         }
         return true;
     }
-    public void CommitChanges()
-    {
-        if (!CheckRepo()) return;
-
-        GetFilesRecursively(Directory.GetCurrentDirectory());
-
-        trackedFiles.ForEach((file) => {
-            CdcService cdc = new();
-            byte[] data = File.ReadAllBytes(file.FullName);
-            List<byte[]> chunks = cdc.ChunkData(data);
-
-            chunks.ForEach((chunk) => {
-                UpdateChunkStore(chunk);
-            });
-        });
-
-        if(!wasUpdated){
-            Console.WriteLine($"No changes detected");
-        }
-    }
 
     public void GetFilesRecursively(string path){
         DirectoryInfo info = new(path);
 
         foreach (FileInfo file in info.GetFiles())
         {
-            trackedFiles.Add(file);
+            if(trackedFiles.Find(f => f.FullName == file.FullName) == null)
+            {
+                trackedFiles.Add(file);
+            }
         }
 
         foreach (DirectoryInfo dir in info.GetDirectories())
@@ -103,56 +89,13 @@ public class RepoService
             GetFilesRecursively(dir.FullName);
         }
     }
-    public void UpdateChunkStore(byte[] chunk){
-        string hash = CdcService.CalculateChunkFingerprint(chunk);
-        string safeHash = hash.Replace("/", "_");
 
-        DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\chunk_store");
-        string filePath = $"{dir.FullName}\\{safeHash}.txt";
-        
-        if(!File.Exists(filePath)){            
-            using (FileStream fs = File.Create(filePath)){
-                wasUpdated = true;
-                fs.Write(chunk, 0, chunk.Length);
-            }
-        }
-    }
-
-    public void CheckChanges()
-    {
-        if (!CheckRepo()) return;
-
-        GetFilesRecursively(Directory.GetCurrentDirectory());
-
-        trackedFiles.ForEach((file) => {
-            bool hasChanges = false;
-            int numberOfChunks = 0;
-            CdcService cdc = new();
-            byte[] data = File.ReadAllBytes(file.FullName);
-            List<byte[]> chunks = cdc.ChunkData(data);
-
-            chunks.ForEach((chunk) => {
-                string hash = CdcService.CalculateChunkFingerprint(chunk);
-                string safeHash = hash.Replace("/", "_");
-                DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\chunk_store");
-                if(!File.Exists($"{dir.FullName}\\{safeHash}.txt")) {
-                    hasChanges = true;
-                    numberOfChunks++;
-                }
-            });
-            if (hasChanges)
-            {
-                Console.WriteLine($"Changes detected in file: {GetRelativePath(file.FullName)}, {numberOfChunks} new chunks");
-            }
-        });
-    }
-
-    public string GetRelativePath(string fullPath)
+    public static string GetRelativePath(string fullPath)
     {
         string currentDir = Directory.GetCurrentDirectory();
         if (fullPath.StartsWith(currentDir))
         {
-            string relativePath = fullPath.Substring(currentDir.Length).TrimStart(Path.DirectorySeparatorChar);
+            string relativePath = fullPath[currentDir.Length..].TrimStart(Path.DirectorySeparatorChar);
             return relativePath;
         }
         else
