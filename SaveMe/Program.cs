@@ -1,55 +1,68 @@
-﻿RepoService repoService = new RepoService();
-SnapshotService snapshotService = new SnapshotService();
-ChunkService chunkService = new(repoService);
-foreach (var arg in args)
+﻿RepoService repoService = new();
+SnapshotService snapshotService = new();
+ChunkService chunkService = new(repoService: repoService);
+
+if (args.Length == 0)
 {
-    switch (arg)
-    {
-        case "help":
-        case "h":
-            ShowHelp();
-            break;
-        case "init":
-        case "i":
-            repoService.InitRepo();
-            break;
-        case "commit":
-        case "c":
-            snapshotService.CreateSnapshot();
-            break;
-        case "check":
-        case "ch":
-            chunkService.CheckChanges();
-            break;
-        case "snapshots":
-        case "s":
-            snapshotService.ListSnapshots();
-            break;
-        case "restore":
-        case "r":
-            Console.WriteLine("Enter the snapshot number to restore:");
-            if (int.TryParse(Console.ReadLine(), out int snapshotNumber))
-            {
-                snapshotService.RestoreSnapshot(snapshotNumber);
-            }
-            else
-            {
-                Console.WriteLine("Invalid input. Please enter a valid snapshot number.");
-            }
-            break;
-        default:
-            ShowHelp();
-            break;
-    }
+    Console.WriteLine(CommandHelper.GenerateFullDocumentation());
+    return 0;
 }
 
-void ShowHelp()
+var command = args[0];
+
+switch (command)
 {
-    Console.WriteLine("Usage: SaveMe [options]");
-    Console.WriteLine("Options:");
-    Console.WriteLine("  help, h        Show this help message");
-    Console.WriteLine("  init, i        Initialize the repository");
-    Console.WriteLine("  commit, c      Commit changes to the repository");
-    Console.WriteLine("  check, ch      Check for changes in the repository");
-    Console.WriteLine("  snapshots, s   List all snapshots in the repository");
+    case "-i":
+    case "--init":
+        repoService.InitRepo();
+        break;
+    case "-c":
+    case "--commit":
+        snapshotService.CreateSnapshot();
+        break;
+    case "-ck":
+    case "--check":
+        chunkService.CheckChanges();
+        break;
+    case "-s":
+    case "--snapshots":
+        snapshotService.ListSnapshots();
+        break;
+    case "-r":
+    case "--restore":
+        HandleRestore(args);
+        break;
+    case "-h":
+    case "--help":
+        Console.WriteLine(CommandHelper.GenerateFullDocumentation());
+        break;
+    default:
+        Console.WriteLine($"Unknown command: {command}");
+        Console.WriteLine(CommandHelper.GenerateFullDocumentation());
+        return 1;
+}
+
+return 0;
+
+void HandleRestore(string[] args)
+{
+    var numberIdx = Array.IndexOf(args, "--index");
+    if (numberIdx < 0)
+        numberIdx = Array.IndexOf(args, "-i");
+
+    if (numberIdx >= 0 && numberIdx + 1 < args.Length && int.TryParse(args[numberIdx + 1], out int num))
+    {
+        if (num <= 0)
+        {
+            Console.WriteLine("Error: Snapshot number must be greater than 0");
+            Environment.Exit(1);
+        }
+        snapshotService.RestoreSnapshot(num);
+    }
+    else
+    {
+        Console.WriteLine($"Usage: SaveMe restore --snapshot-number <number>");
+        Console.WriteLine(CommandHelper.GetCommandDescription("restore"));
+        Environment.Exit(1);
+    }
 }
