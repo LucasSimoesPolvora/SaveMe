@@ -13,8 +13,6 @@ public class SnapshotService
     {
         if(!RepoService.CheckRepo()) return;
 
-        bool hadChanges = false;
-
         DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\snapshots");
         string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
         string snapshotId = $"snapshot_{timestamp}";
@@ -34,14 +32,12 @@ public class SnapshotService
             string relativePath = RepoService.GetRelativePath(file.FullName);
             
             if(chunkService.HasChanges(file)){
-                hadChanges = true;
                 List<string> chunkFingerprints = ChunkService.GetChunkFingerprintsByFile(file);
                 CommitFile commitFile = new(relativePath, chunkFingerprints);
                 snapshot.CommitFiles = [.. snapshot.CommitFiles, commitFile];
             }
             else if (WasFileDeleted(relativePath))
             {
-                hadChanges = true;
                 List<string> chunkFingerprints = ChunkService.GetChunkFingerprintsByFile(file);
                 CommitFile commitFile = new(relativePath, chunkFingerprints);
                 snapshot.CommitFiles = [.. snapshot.CommitFiles, commitFile];
@@ -52,18 +48,13 @@ public class SnapshotService
         string[] deletedFiles = GetDeletedFiles();
         if (deletedFiles.Length > 0)
         {
-            hadChanges = true;
             snapshot.DeletedFiles = deletedFiles;
         }
 
-        if(!hadChanges){
-            Console.WriteLine("No changes detected. Snapshot not created.");
-            return;
-        }
         chunkService.CommitChunks();
         
         JsonSerializerOptions options = new() { WriteIndented = true };
-        JsonContext context = new JsonContext();
+        JsonContext context = new();
         string json = JsonSerializer.Serialize(snapshot, typeof(Snapshots), context);
 
         CompareEfficiency();
