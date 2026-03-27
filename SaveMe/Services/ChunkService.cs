@@ -83,6 +83,11 @@ public class ChunkService
             }
             hasChanges = false;
         });
+
+        if (!hasChanges)
+        {
+            Console.WriteLine("No changes detected in tracked files.");
+        }
     }
 
     public void WriteChunkToFile(byte[] chunk, string filePath)
