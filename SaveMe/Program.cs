@@ -24,8 +24,8 @@ switch (command)
     case "--check":
         chunkService.CheckChanges();
         break;
-    case "-s":
-    case "--snapshots":
+    case "-l":
+    case "--list":
         snapshotService.ListSnapshots();
         break;
     case "-r":
