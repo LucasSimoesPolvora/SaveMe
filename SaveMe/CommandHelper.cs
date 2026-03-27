@@ -23,7 +23,7 @@ public static class CommandHelper
         return commandName switch
         {
             "--init, -i" => "Initialize the repository for snapshot management",
-            "--commit, -c" => "Commit and create a snapshot of current changes",
+            "--backup, -b" => "Create a new snapshot of current changes",
             "--check, -ch" => "Check for changes in the repository",
             "--list, -l" => "List all available snapshots",
             "--restore, -r" => "Restore files from a previous snapshot",
@@ -57,7 +57,7 @@ Usage: SaveMe <command> [options]
 
 Commands:
   --init, -i              {GetCommandDescription("--init")}
-  --commit, -c            {GetCommandDescription("--commit")}
+  --backup, -b            {GetCommandDescription("--backup")}
   --check, -ch             {GetCommandDescription("--check")}
   --list, -l         {GetCommandDescription("--list")}
   --restore, -r           {GetCommandDescription("--restore")}
@@ -66,7 +66,7 @@ Options for restore:
 
 Examples:
   SaveMe --init                     Initialize the repository
-  SaveMe --commit                   Create a new snapshot
+  SaveMe --backup                   Create a new snapshot
   SaveMe --check                    Check for file changes
   SaveMe --list                     Display all snapshots
   SaveMe --restore --index 1        Restore snapshot number 1

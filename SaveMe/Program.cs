@@ -16,8 +16,8 @@ switch (command)
     case "--init":
         repoService.InitRepo();
         break;
-    case "-c":
-    case "--commit":
+    case "-b":
+    case "--backup":
         snapshotService.CreateSnapshot();
         break;
     case "-ck":
