@@ -27,7 +27,7 @@
 
 ## 📚 Project Overview
 
-**SaveMe** is an educational school project developed to prepare for exams, implementing an intelligent file versioning system. It demonstrates advanced concepts in version control, data chunking, and file management through a clean CLI interface.
+**SaveMe** is an educational school project developed to prepare for exams, implementing an intelligent file backuping system. It demonstrates advanced concepts in backup control, data chunking, and file management through a clean CLI interface.
 
 The core innovation is the use of **Content Defined Chunking (CDC)**, a technique that divides files based on content boundaries rather than fixed sizes. This enables efficient detection of changes, smart deduplication, and minimal storage overhead.
 
