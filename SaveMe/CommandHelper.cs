@@ -26,7 +26,7 @@ public static class CommandHelper
     {
         return optionName switch
         {
-            "snapshot-number" => "The snapshot number to restore (must be greater than 0)",
+            "index" => "The snapshot number to restore (must be greater than 0)",
             "--path, -p" => "The directory path where the .sm repository will be stored",
             _ => "Unknown option"
         };
@@ -49,7 +49,7 @@ Options for init:
   --path, -p <directory>  {GetOptionDescription("--path, -p")}
 
 Options for restore:
-  --index, -i <number>    {GetOptionDescription("snapshot-number")}
+  --index, -i <number>    {GetOptionDescription("index")}
 
 Examples:
   SaveMe --init --path C:\SaveMe              Initialize the repository with custom path

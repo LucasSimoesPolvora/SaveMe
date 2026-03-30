@@ -123,7 +123,7 @@ void HandleRestore(string[] args)
     }
     else
     {
-        Console.WriteLine($"Usage: SaveMe restore --snapshot-number <number>");
+        Console.WriteLine($"Usage: SaveMe --restore --index <number>");
         Console.WriteLine(CommandHelper.GetCommandDescription("restore"));
         Environment.Exit(1);
     }
