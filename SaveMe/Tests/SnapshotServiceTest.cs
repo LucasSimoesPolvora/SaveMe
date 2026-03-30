@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Xunit;
 using SaveMe.Models;
+using SaveMe.Services;
 
 public class SnapshotServiceTest : IDisposable
 {
@@ -8,6 +9,7 @@ public class SnapshotServiceTest : IDisposable
     private readonly string _snapshotDirectory;
     private readonly string _chunkStoreDirectory;
     private readonly string _originalWorkingDirectory;
+    private readonly AppSettingsService _appSettingsService;
     private static readonly object _lockObject = new();
 
     public SnapshotServiceTest()
@@ -25,7 +27,11 @@ public class SnapshotServiceTest : IDisposable
             Directory.CreateDirectory(_snapshotDirectory);
             Directory.CreateDirectory(_chunkStoreDirectory);
             
-            // Change working directory to test directory
+            // Set up AppSettingsService with test directory
+            _appSettingsService = new AppSettingsService();
+            _appSettingsService.SetSaveMePath(_testDirectory);
+            
+            // Change working directory to test directory for RestoreSnapshot compatibility
             Directory.SetCurrentDirectory(_testDirectory);
         }
     }
@@ -37,6 +43,20 @@ public class SnapshotServiceTest : IDisposable
             try
             {
                 Directory.SetCurrentDirectory(_originalWorkingDirectory);
+                
+                string settingsPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "SaveMe",
+                    "appsettings.json"
+                );
+                if (File.Exists(settingsPath))
+                {
+                    try
+                    {
+                        File.Delete(settingsPath);
+                    }
+                    catch { }
+                }
                 
                 Thread.Sleep(50);
             }
@@ -59,7 +79,8 @@ public class SnapshotServiceTest : IDisposable
     public void ListSnapshots_WithNoSnapshots_ShouldDisplayMessage()
     {
         // Arrange
-        SnapshotService service = new();
+        RepoService repoService = new(_appSettingsService);
+        SnapshotService service = new(repoService);
 
         TextWriter originalOut = Console.Out;
         using (StringWriter writer = new())
@@ -108,7 +129,8 @@ public class SnapshotServiceTest : IDisposable
     public void ListSnapshots_WithSnapshots_ShouldNumberThem()
     {
         // Arrange
-        SnapshotService service = new SnapshotService();
+        RepoService repoService = new(_appSettingsService);
+        SnapshotService service = new(repoService);
 
         File.WriteAllText(Path.Combine(_snapshotDirectory, "snapshot_a.json"), "{}");
         File.WriteAllText(Path.Combine(_snapshotDirectory, "snapshot_b.json"), "{}");
@@ -225,7 +247,8 @@ public class SnapshotServiceTest : IDisposable
     public void RestoreSnapshot_WithDeletedFiles_ShouldDeleteFilesInSnapshot()
     {
         // Arrange
-        SnapshotService service = new();
+        RepoService repoService = new(_appSettingsService);
+        SnapshotService service = new(repoService);
 
         string fileToDelete = Path.Combine(_testDirectory, "to_delete.txt");
         File.WriteAllText(fileToDelete, "delete me");
@@ -301,7 +324,8 @@ public class SnapshotServiceTest : IDisposable
     public void RestoreSnapshot_WithNestedDirectories_ShouldCreateDirectories()
     {
         // Arrange
-        SnapshotService service = new();
+        RepoService repoService = new(_appSettingsService);
+        SnapshotService service = new(repoService);
 
         Snapshots snapshot = new Snapshots
         {
