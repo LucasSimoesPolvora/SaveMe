@@ -2,18 +2,19 @@ using System.Text.Json;
 using SaveMe.Models;
 public class SnapshotService
 {
-    readonly RepoService repoService = new();
+    readonly RepoService repoService;
     readonly ChunkService chunkService;
 
-    public SnapshotService()
+    public SnapshotService(RepoService? repoService = null)
     {
-        chunkService = new(repoService);
+        this.repoService = repoService ?? new RepoService();
+        chunkService = new(this.repoService);
     }
     public void CreateSnapshot()
     {
-        if(!RepoService.CheckRepo()) return;
+        if(!RepoService.CheckRepo(repoService.GetRepositoryBasePath())) return;
 
-        DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\snapshots");
+        DirectoryInfo dir = new(repoService.GetSnapshotsPath());
         string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
         string snapshotId = $"snapshot_{timestamp}";
         string filePath = $"{dir.FullName}\\{snapshotId}.json";
@@ -64,7 +65,7 @@ public class SnapshotService
 
     public void ListSnapshots()
     {
-        DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\snapshots");
+        DirectoryInfo dir = new(repoService.GetSnapshotsPath());
         FileInfo[] snapshotFiles = dir.GetFiles("*.json");
         if (!dir.Exists || snapshotFiles.Length == 0)
         {
@@ -82,12 +83,12 @@ public class SnapshotService
 
     private string[] GetDeletedFiles()
     {
-        DirectoryInfo snapshotDir = new(Directory.GetCurrentDirectory() + "\\.sm\\snapshots");
+        DirectoryInfo snapshotDir = new(repoService.GetSnapshotsPath());
         FileInfo[] snapshotFiles = snapshotDir.GetFiles("*.json");
         
         if (snapshotFiles.Length == 0)
         {
-            return Array.Empty<string>();
+            return [];
         }
 
         FileInfo lastSnapshotFile = snapshotFiles.OrderByDescending(f => f.Name).First();
@@ -118,7 +119,7 @@ public class SnapshotService
 
     private bool WasFileDeleted(string filePath)
     {
-        DirectoryInfo snapshotDir = new(Directory.GetCurrentDirectory() + "\\.sm\\snapshots");
+        DirectoryInfo snapshotDir = new(repoService.GetSnapshotsPath());
         FileInfo[] snapshotFiles = snapshotDir.GetFiles("*.json");
         
         if (snapshotFiles.Length == 0)
@@ -142,7 +143,7 @@ public class SnapshotService
 
     public void RestoreSnapshot(int snapshotNumber)
     {
-        DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\snapshots");
+        DirectoryInfo dir = new(repoService.GetSnapshotsPath());
         FileInfo[] snapshotFiles = dir.GetFiles("*.json");
         
         if (!dir.Exists || snapshotFiles.Length == 0)
@@ -173,7 +174,7 @@ public class SnapshotService
         Console.WriteLine($"Restoring snapshot: {selectedSnapshotFile.Name}");
         
         string currentDir = Directory.GetCurrentDirectory();
-        DirectoryInfo chunkStoreDir = new(currentDir + "\\.sm\\chunk_store");
+        DirectoryInfo chunkStoreDir = new(repoService.GetChunkStorePath());
 
         foreach (CommitFile commitFile in snapshot.CommitFiles)
         {
@@ -223,7 +224,7 @@ public class SnapshotService
     }
 
     public void CompareEfficiency(){
-        DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\snapshots");
+        DirectoryInfo dir = new(repoService.GetSnapshotsPath());
         FileInfo[] snapshotFiles = dir.GetFiles("*.json");
         
         if (!dir.Exists || snapshotFiles.Length == 0)

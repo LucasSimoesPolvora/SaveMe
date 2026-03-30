@@ -12,7 +12,7 @@ public class ChunkService
         string hash = CdcService.CalculateChunkFingerprint(chunk);
         string safeHash = hash.Replace("/", "_");
 
-        DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\chunk_store");
+        DirectoryInfo dir = new(repoService.GetChunkStorePath());
         string filePath = $"{dir.FullName}\\{safeHash}.txt";
         
         if(!File.Exists(filePath)){            
@@ -41,7 +41,7 @@ public class ChunkService
         GetChunksByFile(file).ForEach((chunk) => {
             string hash = CdcService.CalculateChunkFingerprint(chunk);
             string safeHash = hash.Replace("/", "_");
-            DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\chunk_store");
+            DirectoryInfo dir = new(repoService.GetChunkStorePath());
             if(!File.Exists($"{dir.FullName}\\{safeHash}.txt")) {
                 hasChanges = true;
             }
@@ -71,7 +71,7 @@ public class ChunkService
             GetChunksByFile(file).ForEach((chunk) => {
                 string hash = CdcService.CalculateChunkFingerprint(chunk);
                 string safeHash = hash.Replace("/", "_");
-                DirectoryInfo dir = new(Directory.GetCurrentDirectory() + "\\.sm\\chunk_store");
+                DirectoryInfo dir = new(repoService.GetChunkStorePath());
                 if(!File.Exists($"{dir.FullName}\\{safeHash}.txt")) {
                     hasChanges = true;
                     numberOfChunks++;
