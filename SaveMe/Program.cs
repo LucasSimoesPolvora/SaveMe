@@ -1,6 +1,22 @@
-﻿RepoService repoService = new();
-SnapshotService snapshotService = new();
-ChunkService chunkService = new(repoService: repoService);
+﻿using SaveMe.Services;
+
+RepoService repoService;
+SnapshotService snapshotService;
+ChunkService chunkService;
+AppSettingsService appSettingsService = new();
+
+try
+{
+    repoService = new(appSettingsService);
+    snapshotService = new(repoService);
+    chunkService = new(repoService: repoService);
+}
+catch
+{
+    repoService = new();
+    snapshotService = new(repoService);
+    chunkService = new(repoService: repoService);
+}
 
 if (args.Length == 0)
 {
@@ -14,7 +30,7 @@ switch (command)
 {
     case "-i":
     case "--init":
-        repoService.InitRepo();
+        HandleInit(args, appSettingsService, repoService);
         break;
     case "-b":
     case "--backup":
@@ -43,6 +59,52 @@ switch (command)
 }
 
 return 0;
+
+void HandleInit(string[] args, AppSettingsService settingsService, RepoService repo)
+{
+    int pathIdx = Array.IndexOf(args, "--path");
+    if (pathIdx < 0)
+        pathIdx = Array.IndexOf(args, "-p");
+
+    if (pathIdx >= 0 && pathIdx + 1 < args.Length)
+    {
+        string saveMePath = args[pathIdx + 1];
+        
+        try
+        {
+            settingsService.SetSaveMePath(saveMePath);
+            Console.WriteLine($"SaveMe path configured: {saveMePath}");
+            
+            if (Directory.Exists(saveMePath) && Directory.GetFiles(saveMePath).Length > 0)
+            {
+                Console.WriteLine("Directory is not empty. Initialize anyway? (y/n)");
+                if (Console.ReadKey().KeyChar == 'y')
+                {
+                    repo.InitRepo();
+                }
+                else
+                {
+                    Console.WriteLine("\nInitialization cancelled");
+                }
+            }
+            else
+            {
+                repo.InitRepo();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing repository: {ex.Message}");
+            Environment.Exit(1);
+        }
+    }
+    else
+    {
+        Console.WriteLine("Usage: SaveMe init --path <directory>");
+        Console.WriteLine(CommandHelper.GetCommandDescription("--init"));
+        Environment.Exit(1);
+    }
+}
 
 void HandleRestore(string[] args)
 {
