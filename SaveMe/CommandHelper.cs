@@ -4,20 +4,11 @@
 /// </summary>
 public static class CommandHelper
 {
-    /// <summary>
-    /// Gets the main application description.
-    /// </summary>
-    /// <returns>Description of the SaveMe application</returns>
     public static string GetDescription()
     {
         return "SaveMe - Repository snapshot management tool";
     }
 
-    /// <summary>
-    /// Gets the description for a specific command.
-    /// </summary>
-    /// <param name="commandName">The name of the command</param>
-    /// <returns>Description of the command</returns>
     public static string GetCommandDescription(string commandName)
     {
         return commandName switch
@@ -31,24 +22,16 @@ public static class CommandHelper
         };
     }
 
-    /// <summary>
-    /// Gets the description for a specific option.
-    /// </summary>
-    /// <param name="optionName">The name of the option</param>
-    /// <returns>Description of the option</returns>
     public static string GetOptionDescription(string optionName)
     {
         return optionName switch
         {
             "snapshot-number" => "The snapshot number to restore (must be greater than 0)",
+            "--path, -p" => "The directory path where the .sm repository will be stored",
             _ => "Unknown option"
         };
     }
 
-    /// <summary>
-    /// Generates full documentation for the application.
-    /// </summary>
-    /// <returns>Complete help text</returns>
     public static string GenerateFullDocumentation()
     {
         return $@"{GetDescription()}
@@ -56,20 +39,25 @@ public static class CommandHelper
 Usage: SaveMe <command> [options]
 
 Commands:
-  --init, -i              {GetCommandDescription("--init")}
-  --backup, -b            {GetCommandDescription("--backup")}
-  --check, -ch             {GetCommandDescription("--check")}
-  --list, -l         {GetCommandDescription("--list")}
-  --restore, -r           {GetCommandDescription("--restore")}
+  --init, -i              {GetCommandDescription("--init, -i")}
+  --backup, -b            {GetCommandDescription("--backup, -b")}
+  --check, -ch            {GetCommandDescription("--check, -ch")}
+  --list, -l              {GetCommandDescription("--list, -l")}
+  --restore, -r           {GetCommandDescription("--restore, -r")}
+
+Options for init:
+  --path, -p <directory>  {GetOptionDescription("--path, -p")}
+
 Options for restore:
-  --index, -i <number>  {GetOptionDescription("--index")}
+  --index, -i <number>    {GetOptionDescription("snapshot-number")}
 
 Examples:
-  SaveMe --init                     Initialize the repository
-  SaveMe --backup                   Create a new snapshot
-  SaveMe --check                    Check for file changes
-  SaveMe --list                     Display all snapshots
-  SaveMe --restore --index 1        Restore snapshot number 1
+  SaveMe --init --path C:\SaveMe              Initialize the repository with custom path
+  SaveMe --backup                             Create a new snapshot
+  SaveMe --check                              Check for file changes
+  SaveMe --list                               Display all snapshots
+  SaveMe --restore --index 1                  Restore snapshot number 1
+
 For more information, visit: https://github.com/LucasSimoesPolvora/SaveMe
 ";
     }
