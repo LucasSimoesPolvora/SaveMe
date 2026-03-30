@@ -1,6 +1,6 @@
 # SaveMe
 
-> A smart version control system using Content Defined Chunking (CDC) for efficient file change detection and management.
+> A smart backup control system using Content Defined Chunking (CDC) for efficient file change detection and management.
 
 ## 📖 Table of Contents
 
