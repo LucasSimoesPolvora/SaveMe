@@ -34,11 +34,7 @@ switch (command)
         break;
     case "-b":
     case "--backup":
-        snapshotService.CreateSnapshot();
-        break;
-    case "-ck":
-    case "--check":
-        chunkService.CheckChanges();
+        HandleBackup(args, snapshotService);
         break;
     case "-l":
     case "--list":
@@ -103,6 +99,22 @@ void HandleInit(string[] args, AppSettingsService settingsService, RepoService r
         Console.WriteLine("Usage: SaveMe init --path <directory>");
         Console.WriteLine(CommandHelper.GetCommandDescription("--init"));
         Environment.Exit(1);
+    }
+}
+
+void HandleBackup(string[] args, SnapshotService snapshotService)
+{
+    bool isDryRun = args.Contains("--dry-run") || args.Contains("-d");
+    
+    if (isDryRun)
+    {
+        Console.WriteLine("[DRY RUN] Checking for changes...");
+        chunkService.CheckChanges();
+        Console.WriteLine("[DRY RUN] Complete. No snapshot created.");
+    }
+    else
+    {
+        snapshotService.CreateSnapshot();
     }
 }
 
