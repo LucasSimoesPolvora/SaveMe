@@ -96,7 +96,7 @@ void HandleInit(string[] args, AppSettingsService settingsService, RepoService r
     }
     else
     {
-        Console.WriteLine("Usage: SaveMe init --path <directory>");
+        Console.WriteLine("Usage: SaveMe --init --path <directory>");
         Console.WriteLine(CommandHelper.GetCommandDescription("--init"));
         Environment.Exit(1);
     }
