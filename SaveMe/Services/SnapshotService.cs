@@ -141,9 +141,9 @@ public class SnapshotService
         return lastSnapshot.DeletedFiles.Contains(filePath);
     }
 
-    public void RestoreSnapshot(int snapshotNumber)
+    public void RestoreSnapshot(int snapshotNumber, string restorePath)
     {
-        DirectoryInfo dir = new(repoService.GetSnapshotsPath());
+        DirectoryInfo dir = new(Path.Combine(restorePath, ".sm", "snapshots"));
         FileInfo[] snapshotFiles = dir.GetFiles("*.json");
         
         if (!dir.Exists || snapshotFiles.Length == 0)

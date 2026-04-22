@@ -100,7 +100,8 @@ public class SnapshotServiceTest : IDisposable
     public void ListSnapshots_WithMultipleSnapshots_ShouldDisplayAll()
     {
         // Arrange
-        SnapshotService service = new();
+        RepoService repoService = new(_appSettingsService);
+        SnapshotService service = new(repoService);
 
         File.WriteAllText(Path.Combine(_snapshotDirectory, "snapshot_001.json"), "{}");
         File.WriteAllText(Path.Combine(_snapshotDirectory, "snapshot_002.json"), "{}");
@@ -160,7 +161,8 @@ public class SnapshotServiceTest : IDisposable
     public void RestoreSnapshot_WithInvalidNumber_ShouldDisplayError()
     {
         // Arrange
-        SnapshotService service = new();
+        RepoService repoService = new(_appSettingsService);
+        SnapshotService service = new(repoService);
 
         File.WriteAllText(Path.Combine(_snapshotDirectory, "snapshot_001.json"), "{}");
 
@@ -170,7 +172,7 @@ public class SnapshotServiceTest : IDisposable
             Console.SetOut(writer);
 
             // Act
-            service.RestoreSnapshot(99);
+            service.RestoreSnapshot(99, _testDirectory);
 
             // Assert
             string output = writer.ToString();
@@ -184,7 +186,8 @@ public class SnapshotServiceTest : IDisposable
     public void RestoreSnapshot_WithNoSnapshots_ShouldDisplayError()
     {
         // Arrange
-        SnapshotService service = new();
+        RepoService repoService = new(_appSettingsService);
+        SnapshotService service = new(repoService);
 
         TextWriter originalOut = Console.Out;
         using (StringWriter writer = new())
@@ -192,7 +195,7 @@ public class SnapshotServiceTest : IDisposable
             Console.SetOut(writer);
 
             // Act
-            service.RestoreSnapshot(1);
+            service.RestoreSnapshot(1, _testDirectory);
 
             // Assert
             string output = writer.ToString();
@@ -206,7 +209,8 @@ public class SnapshotServiceTest : IDisposable
     public void RestoreSnapshot_WithValidSnapshot_ShouldRestoreFiles()
     {
         // Arrange
-        SnapshotService service = new();
+        RepoService repoService = new(_appSettingsService);
+        SnapshotService service = new(repoService);
 
         Snapshots snapshot = new Snapshots
         {
@@ -219,8 +223,9 @@ public class SnapshotServiceTest : IDisposable
         };
 
         string snapshotPath = Path.Combine(_snapshotDirectory, "snapshot_20260325123456.json");
-        JsonContext context = new();
-        string json = JsonSerializer.Serialize(snapshot, typeof(Snapshots), context);
+        JsonSerializerOptions options = new() { WriteIndented = true };
+        JsonContext context = new(options);
+        string json = JsonSerializer.Serialize(snapshot, context.Snapshots);
         File.WriteAllText(snapshotPath, json);
 
         File.WriteAllBytes(Path.Combine(_chunkStoreDirectory, "hash1.txt"), new byte[] { 1, 2, 3 });
@@ -232,7 +237,7 @@ public class SnapshotServiceTest : IDisposable
             Console.SetOut(writer);
 
             // Act
-            service.RestoreSnapshot(1);
+            service.RestoreSnapshot(1, _testDirectory);
 
             // Assert
             string output = writer.ToString();
@@ -261,8 +266,9 @@ public class SnapshotServiceTest : IDisposable
         };
 
         string snapshotPath = Path.Combine(_snapshotDirectory, "snapshot_20260325123456.json");
-        JsonContext context = new();
-        string json = JsonSerializer.Serialize(snapshot, typeof(Snapshots), context);
+        JsonSerializerOptions options = new() { WriteIndented = true };
+        JsonContext context = new(options);
+        string json = JsonSerializer.Serialize(snapshot, context.Snapshots);
         File.WriteAllText(snapshotPath, json);
 
         TextWriter originalOut = Console.Out;
@@ -271,7 +277,7 @@ public class SnapshotServiceTest : IDisposable
             Console.SetOut(writer);
 
             // Act
-            service.RestoreSnapshot(1);
+            service.RestoreSnapshot(1, _testDirectory);
 
             // Assert
             string output = writer.ToString();
@@ -286,7 +292,8 @@ public class SnapshotServiceTest : IDisposable
     public void RestoreSnapshot_WithMissingChunks_ShouldWarnButContinue()
     {
         // Arrange
-        SnapshotService service = new();
+        RepoService repoService = new(_appSettingsService);
+        SnapshotService service = new(repoService);
 
         Snapshots snapshot = new Snapshots
         {
@@ -299,8 +306,9 @@ public class SnapshotServiceTest : IDisposable
         };
 
         string snapshotPath = Path.Combine(_snapshotDirectory, "snapshot_20260325123456.json");
-        JsonContext context = new();
-        string json = JsonSerializer.Serialize(snapshot, typeof(Snapshots), context);
+        JsonSerializerOptions options = new() { WriteIndented = true };
+        JsonContext context = new(options);
+        string json = JsonSerializer.Serialize(snapshot, context.Snapshots);
         File.WriteAllText(snapshotPath, json);
 
         TextWriter originalOut = Console.Out;
@@ -309,7 +317,7 @@ public class SnapshotServiceTest : IDisposable
             Console.SetOut(writer);
 
             // Act
-            service.RestoreSnapshot(1);
+            service.RestoreSnapshot(1, _testDirectory);
 
             // Assert
             string output = writer.ToString();
@@ -338,8 +346,9 @@ public class SnapshotServiceTest : IDisposable
         };
 
         string snapshotPath = Path.Combine(_snapshotDirectory, "snapshot_20260325123456.json");
-        JsonContext context = new();
-        string json = JsonSerializer.Serialize(snapshot, typeof(Snapshots), context);
+        JsonSerializerOptions options = new() { WriteIndented = true };
+        JsonContext context = new(options);
+        string json = JsonSerializer.Serialize(snapshot, context.Snapshots);
         File.WriteAllText(snapshotPath, json);
 
         File.WriteAllBytes(Path.Combine(_chunkStoreDirectory, "hash1.txt"), new byte[] { 1, 2, 3 });
@@ -350,7 +359,7 @@ public class SnapshotServiceTest : IDisposable
             Console.SetOut(writer);
 
             // Act
-            service.RestoreSnapshot(1);
+            service.RestoreSnapshot(1, _testDirectory);
 
             // Assert
             string output = writer.ToString();
@@ -366,7 +375,8 @@ public class SnapshotServiceTest : IDisposable
     public void RestoreSnapshot_ShouldSelectCorrectSnapshot_ByNumber()
     {
         // Arrange
-        SnapshotService service = new();
+        RepoService repoService = new(_appSettingsService);
+        SnapshotService service = new(repoService);
 
         Snapshots snapshot1 = new()
         {
@@ -382,12 +392,13 @@ public class SnapshotServiceTest : IDisposable
             DeletedFiles = Array.Empty<string>()
         };
 
-        JsonContext context = new();
+        JsonSerializerOptions options = new() { WriteIndented = true };
+        JsonContext context = new(options);
 
         File.WriteAllText(Path.Combine(_snapshotDirectory, "snapshot_001.json"), 
-            JsonSerializer.Serialize(snapshot1, typeof(Snapshots), context));
+            JsonSerializer.Serialize(snapshot1, context.Snapshots));
         File.WriteAllText(Path.Combine(_snapshotDirectory, "snapshot_002.json"), 
-            JsonSerializer.Serialize(snapshot2, typeof(Snapshots), context));
+            JsonSerializer.Serialize(snapshot2, context.Snapshots));
 
         File.WriteAllBytes(Path.Combine(_chunkStoreDirectory, "hash1.txt"), [1, 2, 3]);
         File.WriteAllBytes(Path.Combine(_chunkStoreDirectory, "hash2.txt"), [4, 5, 6]);
@@ -398,7 +409,7 @@ public class SnapshotServiceTest : IDisposable
             Console.SetOut(writer);
 
             // Act
-            service.RestoreSnapshot(1);
+            service.RestoreSnapshot(1, _testDirectory);
 
             // Assert
             string output = writer.ToString();
@@ -416,7 +427,8 @@ public class SnapshotServiceTest : IDisposable
     public void CompareEfficiency_WithNoSnapshots_ShouldReturnSilently()
     {
         // Arrange
-        SnapshotService service = new();
+        RepoService repoService = new(_appSettingsService);
+        SnapshotService service = new(repoService);
 
         TextWriter originalOut = Console.Out;
         using (StringWriter writer = new())
@@ -438,10 +450,13 @@ public class SnapshotServiceTest : IDisposable
     public void CompareEfficiency_WithValidSnapshot_ShouldCalculateRatio()
     {
         // Arrange
-        SnapshotService service = new();
+        RepoService repoService = new(_appSettingsService);
+        SnapshotService service = new(repoService);
     
         string testFile = Path.Combine(_testDirectory, "test.txt");
         File.WriteAllText(testFile, "test content with some data");
+        
+        repoService.trackedFiles.Add(new FileInfo(testFile));
 
         Snapshots snapshot = new()
         {
@@ -454,8 +469,9 @@ public class SnapshotServiceTest : IDisposable
         };
 
         string snapshotPath = Path.Combine(_snapshotDirectory, "snapshot_20260325123456.json");
-        JsonContext context = new();
-        string json = JsonSerializer.Serialize(snapshot, typeof(Snapshots), context);
+        JsonSerializerOptions options = new() { WriteIndented = true };
+        JsonContext context = new(options);
+        string json = JsonSerializer.Serialize(snapshot, context.Snapshots);
         File.WriteAllText(snapshotPath, json);
 
         TextWriter originalOut = Console.Out;
@@ -479,10 +495,13 @@ public class SnapshotServiceTest : IDisposable
     public void CompareEfficiency_ShouldCalculateCorrectPercentage()
     {
         // Arrange
-        SnapshotService service = new();
+        RepoService repoService = new(_appSettingsService);
+        SnapshotService service = new(repoService);
 
         string testFile = Path.Combine(_testDirectory, "test_data.txt");
         File.WriteAllText(testFile, "12345");
+        
+        repoService.trackedFiles.Add(new FileInfo(testFile));
 
         Snapshots snapshot = new()
         {
@@ -495,8 +514,9 @@ public class SnapshotServiceTest : IDisposable
         };
 
         string snapshotPath = Path.Combine(_snapshotDirectory, "snapshot_20260325123456.json");
-        JsonContext context = new();
-        string json = JsonSerializer.Serialize(snapshot, typeof(Snapshots), context);
+        JsonSerializerOptions options = new() { WriteIndented = true };
+        JsonContext context = new(options);
+        string json = JsonSerializer.Serialize(snapshot, context.Snapshots);
         File.WriteAllText(snapshotPath, json);
 
         TextWriter originalOut = Console.Out;
@@ -523,7 +543,8 @@ public class SnapshotServiceTest : IDisposable
     public void RestoreSnapshot_AfterListSnapshots_ShouldWorkCorrectly()
     {
         // Arrange
-        SnapshotService service = new();
+        RepoService repoService = new(_appSettingsService);
+        SnapshotService service = new(repoService);
 
         Snapshots snapshot = new()
         {
@@ -533,8 +554,9 @@ public class SnapshotServiceTest : IDisposable
         };
 
         string snapshotPath = Path.Combine(_snapshotDirectory, "snapshot_20260325123456.json");
-        JsonContext context = new();
-        string json = JsonSerializer.Serialize(snapshot, typeof(Snapshots), context);
+        JsonSerializerOptions options = new() { WriteIndented = true };
+        JsonContext context = new(options);
+        string json = JsonSerializer.Serialize(snapshot, context.Snapshots);
         File.WriteAllText(snapshotPath, json);
 
         File.WriteAllBytes(Path.Combine(_chunkStoreDirectory, "chunk1.txt"), [1, 2, 3]);
@@ -555,7 +577,7 @@ public class SnapshotServiceTest : IDisposable
 
             // Act - Restore snapshot
             Console.SetOut(writer);
-            service.RestoreSnapshot(1);
+            service.RestoreSnapshot(1, _testDirectory);
             string restoreOutput = writer.ToString();
             Console.SetOut(originalOut);
 

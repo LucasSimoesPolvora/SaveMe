@@ -27,6 +27,7 @@ public static class CommandHelper
         {
             "snapshot-number" => "The snapshot number to restore (must be greater than 0)",
             "--path, -p" => "The directory path where the .sm repository will be stored",
+            "restore --path, -p" => "The directory path the snapshot is being restored from (defaults to current directory if not specified)",
             "--dry-run, -d" => "Check for changes without creating a snapshot",
             _ => "Unknown option"
         };
@@ -52,13 +53,14 @@ Options for backup:
 
 Options for restore:
   --index, -i <number>    {GetOptionDescription("snapshot-number")}
+  --path, -p <directory>  {GetOptionDescription(" restore --path, -p")}
 
 Examples:
   SaveMe --init --path C:\SaveMe              Initialize the repository with custom path
   SaveMe --backup                             Create a new snapshot
   SaveMe --backup --dry-run                   Check for changes without creating snapshot
   SaveMe --list                               Display all snapshots
-  SaveMe --restore --index 1                  Restore snapshot number 1
+  SaveMe --restore --path C:\SaveMe\test --index 1   Restore snapshot number 1
 
 For more information, visit: https://github.com/LucasSimoesPolvora/SaveMe
 ";
