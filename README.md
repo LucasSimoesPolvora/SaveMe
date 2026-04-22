@@ -99,9 +99,6 @@ SaveMe/
 │   │
 │   └── Repositories/                # Data persistence layer
 │
-├── SCHEMA_FONCTIONNEL.md            # Detailed functional design document
-├── TESTING_GUIDE.md                 # Comprehensive testing documentation
-├── TESTS_README.md                  # Quick test reference
 └── README.md                        # This file
 ```
 
