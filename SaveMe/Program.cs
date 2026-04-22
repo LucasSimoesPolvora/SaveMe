@@ -42,7 +42,7 @@ switch (command)
         break;
     case "-r":
     case "--restore":
-        HandleRestore(args);
+        HandleRestore(args, appSettingsService);
         break;
     case "-h":
     case "--help":
@@ -118,24 +118,43 @@ void HandleBackup(string[] args, SnapshotService snapshotService)
     }
 }
 
-void HandleRestore(string[] args)
+void HandleRestore(string[] args, AppSettingsService settingsService)
 {
-    var numberIdx = Array.IndexOf(args, "--index");
+    int numberIdx = Array.IndexOf(args, "--index");
+    int numberPath = Array.IndexOf(args, "--path");
     if (numberIdx < 0)
         numberIdx = Array.IndexOf(args, "-i");
+    if (numberPath < 0)
+        numberPath = Array.IndexOf(args, "-p");
 
-    if (numberIdx >= 0 && numberIdx + 1 < args.Length && int.TryParse(args[numberIdx + 1], out int num))
+    if (numberIdx >= 0 && 
+    numberIdx + 1 < args.Length && 
+    int.TryParse(args[numberIdx + 1], out int num) && 
+    numberPath >= 0 && 
+    numberPath + 1 < args.Length &&
+    Directory.Exists(args[numberPath + 1]))
     {
         if (num <= 0)
         {
             Console.WriteLine("Error: Snapshot number must be greater than 0");
             Environment.Exit(1);
         }
-        snapshotService.RestoreSnapshot(num);
+        if(settingsService.GetSaveMePaths().Count == 0)
+        {
+            Console.WriteLine("Error: No SaveMe paths configured. Please run 'SaveMe --init <path>' to initialize.");
+            Environment.Exit(1);
+        }
+         else if(!settingsService.GetSaveMePaths().Contains(args[numberPath + 1]))
+        {
+            Console.WriteLine("Error: The specified path is not configured for SaveMe. Please run 'SaveMe --init --path <path>' to initialize.");
+            Environment.Exit(1);
+        }
+
+        snapshotService.RestoreSnapshot(num, args[numberPath + 1]);
     }
     else
     {
-        Console.WriteLine($"Usage: SaveMe --restore --index <number>");
+        Console.WriteLine($"Usage: SaveMe --restore --path <directory> --index <number>");
         Console.WriteLine(CommandHelper.GetCommandDescription("restore"));
         Environment.Exit(1);
     }
