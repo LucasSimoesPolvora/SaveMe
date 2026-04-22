@@ -16,7 +16,6 @@
 - [Educational Value](#-educational-value)
 - [Future Improvements & Roadmap](#-future-improvements--roadmap)
 - [Known Issues & Limitations](#-known-issues--limitations)
-- [License](#-license)
 - [Author](#-author)
 - [Documentation References](#-documentation-references)
 - [Contributing](#-contributing)
@@ -46,6 +45,7 @@ SaveMe tracks file changes at the chunk level rather than the entire file. When 
 - Initialize a new SaveMe repository in any directory
 - Automatic `.sm/` hidden folder structure for storing chunks and snapshots
 - Comprehensive change tracking across all files
+- **Support for multiple repository paths** in configuration
 
 ### ✅ Smart Change Detection
 - Content-based chunking algorithm automatically detects what changed
@@ -86,11 +86,16 @@ SaveMe/
 │   │   ├── RepoService.cs           # Repository initialization and management
 │   │   ├── SnapshotService.cs       # Snapshot creation and restoration
 │   │   ├── ChunkService.cs          # Chunk detection and comparison
-│   │   └── CdcService.cs            # Content Defined Chunking algorithm
+│   │   ├── CdcService.cs            # Content Defined Chunking algorithm
+│   │   └── AppSettingsService.cs    # Application settings and path management
 │   │
 │   ├── Tests/                       # Unit tests
-│   │   ├── SnapshotServiceTest.cs   # SnapshotService test suite (16 tests)
-│   │   └── CdcServiceTest.cs        # CdcService test suite
+│   │   ├── SnapshotServiceTest.cs   # SnapshotService test suite (20+ tests)
+│   │   ├── CdcServiceTest.cs        # CdcService test suite
+│   │   └── Models/                  # Data model classes
+│   │       ├── AppSettings.cs       # Application settings with multiple paths
+│   │       ├── CommitFile.cs        # Represents a file in a snapshot
+│   │       └── Snapshots.cs         # Snapshot metadata structure
 │   │
 │   └── Repositories/                # Data persistence layer
 │
@@ -186,32 +191,65 @@ dotnet test --filter "SnapshotServiceTest"
 
 ---
 
-## 📖 Usage Guide
+## ⚙️ Configuration
+
+### AppSettings File
+
+SaveMe stores configuration in `appsettings.json` located at:
+```
+%APPDATA%\SaveMe\appsettings.json
+```
+
+### Configuration Structure
+
+The configuration file stores multiple backup paths:
+
+```json
+{
+  "saveMePaths": [
+    "C:\\MyProject",
+    "C:\\Documents",
+    "D:\\Work\\Data"
+  ]
+}
+```
+
+### Managing Paths
+
+**Initialize a new path:**
+```bash
+SaveMe --init C:\\MyProject
+```
+
+**View all configured paths:**
+The paths are stored in the `appsettings.json` file. Each path is a separate repository with its own `.sm/` folder.
+
+---
 
 ### Getting Started
 
 SaveMe is a **CLI (Command Line Interface)** application. All commands are run from the command line:
 
 ```bash
-SaveMe.exe [COMMAND] [OPTIONS]
+SaveMe.exe --[COMMAND] [OPTIONS]
 ```
 
 ### Available Commands
 
-#### 1. **help** / **h** - Display Help
+#### 1. **--help** / **-h** - Display Help
 Shows all available commands and their descriptions.
 
 ```bash
-SaveMe help
-SaveMe h
+SaveMe --help
+SaveMe -h
 ```
 
-#### 2. **init** / **i** - Initialize Repository
-Creates a new SaveMe repository in the current directory. Creates the `.sm/` hidden folder structure.
+#### 2. **--init** / **-i** - Initialize Repository
+Creates a new SaveMe repository with specified path. Creates the `.sm/` hidden folder structure.
 
 ```bash
-SaveMe init
-SaveMe i
+SaveMe --init <path>
+SaveMe -i C:\MyProject
 ```
 
 **Output Example**:
@@ -220,12 +258,12 @@ Repository initialized successfully!
 .sm/ folder created with chunk_store and snapshots directories.
 ```
 
-#### 3. **commit** / **c** - Create Snapshot
+#### 3. **--commit** / **-c** - Create Snapshot
 Analyzes all files in the repository, detects changes using CDC, and creates a timestamped snapshot.
 
 ```bash
-SaveMe commit
-SaveMe c
+SaveMe --commit
+SaveMe -c
 ```
 
 **Output Example**:
@@ -237,28 +275,23 @@ Snapshot created: snapshot_20260325143022.json
 - Unchanged chunks: 8
 ```
 
-#### 4. **check** / **ch** - Check for Changes
-Scans the repository for file modifications and displays detected changes.
+#### 4. **--backup** - Backup Management
+Manage repository backups with various options.
 
+##### Backup Operations:
 ```bash
-SaveMe check
-SaveMe ch
+# Create a backup (same as --commit)
+SaveMe --backup
+
+# Dry run - check changes without creating backup
+SaveMe --backup --dry-run
 ```
 
-**Output Example**:
-```
-Checking for changes...
-Changes detected in file: src/main.cs (3 new chunks)
-Changes detected in file: README.md (1 new chunk)
-No changes: data.json
-```
-
-#### 5. **snapshots** / **s** - List Snapshots
+#### 5. **--snapshots** - List Snapshots
 Displays all available snapshots in the repository with their identifiers.
 
 ```bash
-SaveMe snapshots
-SaveMe s
+SaveMe --snapshots
 ```
 
 **Output Example**:
@@ -269,12 +302,12 @@ Available snapshots:
  - 3: snapshot_20260324090000
 ```
 
-#### 6. **restore** / **r** - Restore Snapshot
-Restores your workspace to a previous snapshot state. You'll be prompted to enter the snapshot number.
+#### 6. **--restore** - Restore Snapshot
+Restores your workspace to a previous snapshot state. Requires snapshot number.
 
 ```bash
-SaveMe restore
-SaveMe r
+SaveMe --restore <snapshot_number>
+SaveMe --restore 2
 ```
 
 **Interactive Example**:
@@ -321,16 +354,16 @@ Only chunk 2 gets a new hash → Much more efficient!
 
 ## 🧪 Testing
 
-SaveMe includes a comprehensive unit test suite using **xUnit** framework with **76 total tests**.
+SaveMe includes a comprehensive unit test suite using **xUnit** framework with **extensive test coverage**.
 
 ### Test Coverage
 
 | Service | Tests | Coverage |
 |---------|-------|----------|
-| **SnapshotService** | 16 | List, Restore, Efficiency comparison |
-| **CdcService** | 20 | Chunking, Fingerprinting, Content deduplication |
-| **ChunkService** | 20 | File chunking, Change detection, Reconstruction |
-| **RepoService** | 20 | Initialization, File enumeration, Verification |
+| **SnapshotService** | 20+ | List, Restore, Efficiency comparison, Deleted files |
+| **CdcService** | 20+ | Chunking, Fingerprinting, Content deduplication |
+| **ChunkService** | 20+ | File chunking, Change detection, Reconstruction |
+| **RepoService** | 20+ | Initialization, File enumeration, Verification |
 
 ### Running Tests
 
@@ -360,6 +393,18 @@ See `TESTS_README.md` for quick reference and `TESTING_GUIDE.md` for detailed do
 
 ## 📊 Data Models
 
+### AppSettings
+Application configuration for managing multiple backup paths:
+```json
+{
+  "saveMePaths": [
+    "C:\\MyProject",
+    "C:\\Documents",
+    "D:\\Work\\Data"
+  ]
+}
+```
+
 ### CommitFile
 Represents a file within a snapshot:
 ```json
@@ -384,9 +429,62 @@ Complete snapshot structure:
 
 ---
 
-## ⚠️ Known Issues & Limitations
+## 🚀 Future Improvements & Roadmap
 
-### Current Limitations
+### Planned Features
+- [ ] **Compression Support**: Add GZIP/Brotli compression for chunks
+- [ ] **Encryption**: Implement AES-256 encryption for sensitive data
+- [ ] **Cloud Integration**: Support for AWS S3, Azure Blob, Google Cloud Storage
+- [ ] **Incremental Restore**: Restore only specific files instead of entire snapshot
+- [ ] **Differential Snapshots**: Store only changes between snapshots
+- [ ] **Cross-Platform Support**: Build for Linux and macOS
+- [ ] **GUI Application**: Develop a Windows Forms or WPF interface
+- [ ] **Concurrent Operations**: Support parallel chunk processing
+- [ ] **Snapshot Branching**: Create branches from snapshots
+- [ ] **Merge Operations**: Merge snapshots from different branches
+
+### Short Term (Next Release)
+- [ ] Add `--compression` flag for backup operations
+- [ ] Implement snapshot export/import functionality
+- [ ] Add progress indicators for long-running operations
+- [ ] Support for symbolic links
+
+### Medium Term
+- [ ] Web interface for remote management
+- [ ] Database backend alternative to JSON
+- [ ] Automated backup scheduling
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how you can help:
+
+### Getting Started
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Add tests for new functionality
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+### Development Guidelines
+- Follow C# naming conventions (PascalCase for classes, camelCase for variables)
+- Write unit tests for all new features
+- Ensure all tests pass before submitting PR
+- Update documentation for API changes
+- Keep commits atomic and descriptive
+
+### Code Style
+- Use 4 spaces for indentation
+- Max line length: 120 characters
+- Add XML documentation comments for public methods
+- Use meaningful variable names
+
+---
+
+## ⚠️ Known Issues & Limitations
 - **Windows Only**: Currently compiled for Windows x64 only
 - **No Compression**: Chunks are stored uncompressed
 - **No Encryption**: Snapshots are stored in plain JSON
@@ -426,6 +524,6 @@ If you find a bug or have a suggestion:
 
 ---
 
-**Last Updated**: March 25, 2026  
-**Status**: Educational Project | Stable Release  
+**Last Updated**: April 22, 2026  
+**Status**: Educational Project | Active Development  
 **.NET Version**: 9.0
